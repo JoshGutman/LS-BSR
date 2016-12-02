@@ -782,19 +782,30 @@ def filter_variome(matrix, threshold, step):
     outfile.close()
     return outdata
 
-def run_usearch(id):
+# Does _make_call return anything? If yes, this implementation won't work.
+def run_usearch(id, processors):
     rec=1
     curr_dir=os.getcwd()
     devnull = open("/dev/null", "w")
-    for infile in glob.glob(os.path.join(curr_dir, "x*")):
+
+    # Put all files that start with 'x' in list
+    files_and_temp_names = []
+    for file in glob.glob(os.path.join(curr_dir, "x*")):
+	files_and_temp_names.append(file)
+
+    def _make_call(infile):
         cmd = ["usearch",
            "-cluster_fast", "%s" % infile,
            "-id", str(id),
            "-uc", "results.uc",
            "-centroids", "%s.usearch.out" % str(autoIncrement())]
         subprocess.call(cmd,stdout=devnull,stderr=devnull)
+	
+    mp_shell(_make_call, files_and_temp_names, processors)  
+
     devnull.close()
 
+	
 def filter_scaffolds(in_fasta):
     """If an N is present in any scaffold, the entire contig will
     be entire filtered, probably too harsh"""
