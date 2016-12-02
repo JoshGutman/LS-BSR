@@ -23,6 +23,7 @@ try:
     from igs.utils import functional as func
     from igs.utils import logging
     from igs.threading import functional as p_func
+    from igs.multiprocessing import mp_shell
 except:
     print "Your environment is not set correctly.  Please add LS-BSR to your PYTHONPATH and try again"
     sys.exit()
@@ -88,9 +89,9 @@ def predict_genes(fastadir, processors):
     def _perform_workflow(data):
         tn, f = data
         subprocess.check_call("prodigal -i %s -d %s_genes.seqs -a %s_genes.pep > /dev/null 2>&1" % (f, f, f), shell=True)
-    results = set(p_func.pmap(_perform_workflow,
-                              files_and_temp_names,
-                              num_workers=processors))
+	
+    mp_shell(_perform_workflow, files_and_temp_names, processers)
+
 
 def rename_fasta_header(fasta_in, fasta_out):
     """this is used for renaming the output,
