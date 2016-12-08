@@ -23,7 +23,6 @@ try:
     from igs.utils import functional as func
     from igs.utils import logging
     from igs.threading import functional as p_func
-    from igs.multiprocessing import mp_shell
 except:
     print "Your environment is not set correctly.  Please add LS-BSR to your PYTHONPATH and try again"
     sys.exit()
@@ -32,6 +31,13 @@ import threading
 import types
 from collections import deque,OrderedDict
 import collections
+from multiprocessing import Pool
+
+
+def mp_shell(func, params, numProc):
+	p = Pool(numProc)
+	p.map(func, params)
+	p.terminate()
 
 def get_cluster_ids(in_fasta):
     clusters = []
