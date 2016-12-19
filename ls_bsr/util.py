@@ -84,7 +84,11 @@ def divide_values(file, ref_scores):
     return outdata
     outfile.close()
 
-
+# subfunction for predict_genes
+def _perform_workflow(data):
+    tn, f = data
+    subprocess.check_call("prodigal -i %s -d %s_genes.seqs -a %s_genes.pep > /dev/null 2>&1" % (f, f, f), shell=True)
+	
 def predict_genes(fastadir, processors):
     """simple gene prediction using Prodigal in order
     to find coding regions from a genome sequence"""
@@ -92,11 +96,12 @@ def predict_genes(fastadir, processors):
     files = os.listdir(fastadir)
     files_and_temp_names = [(str(idx), os.path.join(fastadir, f))
                             for idx, f in enumerate(files)]
-    def _perform_workflow(data):
-        tn, f = data
-        subprocess.check_call("prodigal -i %s -d %s_genes.seqs -a %s_genes.pep > /dev/null 2>&1" % (f, f, f), shell=True)
 	
     mp_shell(_perform_workflow, files_and_temp_names, processers)
+
+
+	
+    
 
 
 def rename_fasta_header(fasta_in, fasta_out):
@@ -788,7 +793,16 @@ def filter_variome(matrix, threshold, step):
     outfile.close()
     return outdata
 
-# Does _make_call return anything? If yes, this implementation won't work.
+# subfunction for run_usearch
+def _make_call(infile):
+    cmd = ["usearch",
+           "-cluster_fast", "%s" % infile,
+           "-id", str(id),
+           "-uc", "results.uc",
+           "-centroids", "%s.usearch.out" % str(autoIncrement())]
+    subprocess.call(cmd,stdout=devnull,stderr=devnull)
+
+
 def run_usearch(id, processors):
     rec=1
     curr_dir=os.getcwd()
@@ -799,14 +813,6 @@ def run_usearch(id, processors):
     for file in glob.glob(os.path.join(curr_dir, "x*")):
 	files_and_temp_names.append(file)
 
-    def _make_call(infile):
-        cmd = ["usearch",
-           "-cluster_fast", "%s" % infile,
-           "-id", str(id),
-           "-uc", "results.uc",
-           "-centroids", "%s.usearch.out" % str(autoIncrement())]
-        subprocess.call(cmd,stdout=devnull,stderr=devnull)
-	
     mp_shell(_make_call, files_and_temp_names, processors)  
 
     devnull.close()
