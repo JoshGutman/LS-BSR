@@ -795,27 +795,26 @@ def filter_variome(matrix, threshold, step):
 
 # subfunction for run_usearch
 def _make_call(infile):
+    devnull = open("/dev/null", "w")
     cmd = ["usearch",
-           "-cluster_fast", "%s" % infile,
-           "-id", str(id),
+           "-cluster_fast", "%s" % infile[0],
+           "-id", str(infile[1]),
            "-uc", "results.uc",
            "-centroids", "%s.usearch.out" % str(autoIncrement())]
     subprocess.call(cmd,stdout=devnull,stderr=devnull)
+    devnull.close()
 
 
 def run_usearch(id, processors):
     rec=1
     curr_dir=os.getcwd()
-    devnull = open("/dev/null", "w")
-
+	
     # Put all files that start with 'x' in list
     files_and_temp_names = []
     for file in glob.glob(os.path.join(curr_dir, "x*")):
-	files_and_temp_names.append(file)
+	files_and_temp_names.append([file,id])
 
-    mp_shell(_make_call, files_and_temp_names, processors)  
-
-    devnull.close()
+    mp_shell(_make_call, files_and_temp_names, processors)
 
 	
 def filter_scaffolds(in_fasta):
