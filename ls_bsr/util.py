@@ -146,43 +146,49 @@ def uclust_cluster(id):
            "-centroids", "consensus.fasta"]
     subprocess.call(cmd, stderr=devnull, stdout=devnull)
 
+	
+# Subfunction for blast_against_each_genome_tblast
+def _perform_workflow(data):
+    tn = data[0]
+    f = data[1]
+    my_seg = data[2]
+    peptides = data[3]
+    if ".fasta.new" in f:
+        try:
+            subprocess.check_call("makeblastdb -in %s -dbtype nucl > /dev/null 2>&1" % f, shell=True)
+        except:
+            print "problem found in formatting genome %s" % f
+    if ".fasta.new" in f:
+        try:
+            devnull = open('/dev/null', 'w')
+            cmd = ["tblastn",
+                   "-query", peptides,
+                   "-db", f,
+                   "-seg", my_seg,
+                   "-comp_based_stats", "F",
+                   "-num_threads", "1",
+                   "-evalue", "0.1",
+                   "-outfmt", "6",
+                   "-out", "%s_blast.out" % f]
+            subprocess.call(cmd, stdout=devnull, stderr=devnull)
+            devnull.close()
+        except:
+            print "genomes %s cannot be used" % f
+
 def blast_against_each_genome_tblastn(dir_path, processors, peptides, filter):
     """BLAST all peptides against each genome"""
     curr_dir=os.getcwd()
     files = os.listdir(curr_dir)
-    devnull = open("/dev/null", "w")
     if "T" in filter:
         my_seg = "yes"
     else:
         my_seg = "no"
-    files_and_temp_names = [(str(idx), os.path.join(curr_dir, f))
-                            for idx, f in enumerate(files)]
-    def _perform_workflow(data):
-	tn, f = data
-        if ".fasta.new" in f:
-            try:
-                subprocess.check_call("makeblastdb -in %s -dbtype nucl > /dev/null 2>&1" % f, shell=True)
-            except:
-                print "problem found in formatting genome %s" % f
-        if ".fasta.new" in f:
-            try:
-                devnull = open('/dev/null', 'w')
-                cmd = ["tblastn",
-                       "-query", peptides,
-                       "-db", f,
-                       "-seg", my_seg,
-                       "-comp_based_stats", "F",
-                       "-num_threads", "1",
-                       "-evalue", "0.1",
-                       "-outfmt", "6",
-                       "-out", "%s_blast.out" % f]
-                subprocess.call(cmd, stdout=devnull, stderr=devnull)
-            except:
-                print "genomes %s cannot be used" % f
 
-    results = set(p_func.pmap(_perform_workflow,
-                              files_and_temp_names,
-                              num_workers=processors))
+    files_and_temp_names = []
+    for idx, f in enumerate(files):
+        files_and_temp_names.append([str(idx), os.path.join(curr_dir, f), my_seg, peptides])
+
+    mp_shell(_perform_workflow, files_and_temp_names, processors)
 
 def blast_against_each_genome_blastn(dir_path, processors, filter, peptides):
     """BLAST all peptides against each genome"""
