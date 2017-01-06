@@ -147,8 +147,8 @@ def uclust_cluster(id):
     subprocess.call(cmd, stderr=devnull, stdout=devnull)
 
 	
-# Subfunction for blast_against_each_genome_tblast
-def _perform_workflow(data):
+# Subfunction for blast_against_each_genome_tblastn
+def _perform_workflow_tblastn(data):
     tn = data[0]
     f = data[1]
     my_seg = data[2]
@@ -188,7 +188,37 @@ def blast_against_each_genome_tblastn(dir_path, processors, peptides, filter):
     for idx, f in enumerate(files):
         files_and_temp_names.append([str(idx), os.path.join(curr_dir, f), my_seg, peptides])
 
-    mp_shell(_perform_workflow, files_and_temp_names, processors)
+    mp_shell(_perform_workflow_tblastn, files_and_temp_names, processors)
+
+
+
+# Subfunction for blast_against_each_genome_blastn
+def _perform_workflow_blastn(data):
+    tn = data[0]
+    f = data[1]
+    my_seg = data[2]
+    peptides = data[3]
+    if ".fasta.new" in f:
+        try:
+            subprocess.check_call("makeblastdb -in %s -dbtype nucl > /dev/null 2>&1" % f, shell=True)
+        except:
+            print "problem found in formatting genome %s" % f
+    if ".fasta.new" in f:
+        devnull = open('/dev/null', 'w')
+        try:
+            cmd = ["blastn",
+                   "-task", "blastn",
+                   "-query", peptides,
+                   "-db", f,
+                   "-dust", str(my_seg),
+                   "-num_threads", "1",
+                   "-evalue", "0.1",
+                   "-outfmt", "6",
+                   "-out", "%s_blast.out" % f]
+            subprocess.call(cmd, stdout=devnull, stderr=devnull)
+            devnull.close()
+        except:
+            print "The genome file %s was not processed" % f
 
 def blast_against_each_genome_blastn(dir_path, processors, filter, peptides):
     """BLAST all peptides against each genome"""
@@ -198,34 +228,14 @@ def blast_against_each_genome_blastn(dir_path, processors, filter, peptides):
         my_seg = "no"
     curr_dir=os.getcwd()
     files = os.listdir(curr_dir)
-    files_and_temp_names = [(str(idx), os.path.join(curr_dir, f))
-                            for idx, f in enumerate(files)]
-    def _perform_workflow(data):
-	tn, f = data
-        if ".fasta.new" in f:
-            try:
-                subprocess.check_call("makeblastdb -in %s -dbtype nucl > /dev/null 2>&1" % f, shell=True)
-            except:
-                print "problem found in formatting genome %s" % f
-        if ".fasta.new" in f:
-            devnull = open('/dev/null', 'w')
-            try:
-                cmd = ["blastn",
-                       "-task", "blastn",
-                       "-query", peptides,
-                       "-db", f,
-                       "-dust", str(my_seg),
-                       "-num_threads", "1",
-                       "-evalue", "0.1",
-                       "-outfmt", "6",
-                       "-out", "%s_blast.out" % f]
-                subprocess.call(cmd, stdout=devnull, stderr=devnull)
-            except:
-                print "The genome file %s was not processed" % f
+    files_and_temp_names = []
+    for idx, f in enumerate(files):
+        files_and_temp_names.append([str(idx), os.path.join(curr_dir,f), my_seg, peptides])
 
-    results = set(p_func.pmap(_perform_workflow,
-                              files_and_temp_names,
-                              num_workers=processors))
+    mp_shell(_perform_workflow_blastn, files_and_temp_names, processors)
+
+
+
 
 def get_seq_name(in_fasta):
     """used for renaming the sequences"""
