@@ -1016,23 +1016,28 @@ def parse_tree(tree):
 def blat_against_self(query,reference,output,processors):
     subprocess.check_call("blat -out=blast8 -minIdentity=75 %s %s %s > /dev/null 2>&1" % (reference,query,output), shell=True)
 
+# Subfunction for blat_against_each_genome
+def _perform_workflow_blat_genome(data):
+    tn = data[0]
+    f = data[1]
+    database = data[2]
+    if ".fasta.new" in f:
+        try:
+            subprocess.check_call("blat -out=blast8 -minIdentity=75 %s %s %s_blast.out > /dev/null 2>&1" % (f,database,f), shell=True)
+        except:
+            print "genomes %s cannot be used" % f
+
+
 def blat_against_each_genome(dir_path,database,processors):
+    
     """BLAT all genes against each genome"""
     curr_dir=os.getcwd()
     files = os.listdir(curr_dir)
-    files_and_temp_names = [(str(idx), os.path.join(curr_dir, f))
-                            for idx, f in enumerate(files)]
-    def _perform_workflow(data):
-	tn, f = data
-        if ".fasta.new" in f:
-            try:
-                subprocess.check_call("blat -out=blast8 -minIdentity=75 %s %s %s_blast.out > /dev/null 2>&1" % (f,database,f), shell=True)
-            except:
-                print "genomes %s cannot be used" % f
-
-    results = set(p_func.pmap(_perform_workflow,
-                              files_and_temp_names,
-                              num_workers=processors))
+    files_and_temp_names = []
+    for idx, f in enumerate(files):
+        files_and_temp_names.append([str(idx), os.path.join(curr_dir, f), database])
+    
+    mp_shell(_perform_workflow_blat_genome, files_and_temp_names, processors)
 
 def make_table_dev(infile, test, clusters):
     """make the BSR matrix table"""
