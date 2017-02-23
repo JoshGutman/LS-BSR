@@ -164,46 +164,42 @@ class Test5(unittest.TestCase):
         self.assertRaises(TypeError, parse_blast_report, "true")
         os.chdir("%s" % curr_dir)
         shutil.rmtree(ndir)
-
-class Test6(unittest.TestCase):
-    def test_get_unique_lines_basic_function(self):
-        """tests basic functionality of the get_unique_lines function"""
+    def test_parse_blast_report_duplicate_clusters(self):
+        """tests to see if function removes duplicate clusters"""
         tdir = tempfile.mkdtemp(prefix="filetest_",)
-        fpath = os.path.join(tdir,"testfile.filtered")
+        fpath = os.path.join(tdir,"testfile_blast.out")
         os.chdir("%s" % tdir)
         fp = open(fpath, "w")
-        fp.write("Cluster0	30.2\n")
-        fp.write("Cluster0	15.3\n")
+        fp.write("Cluster0	Cluster0	100.00	15	0	0	1	15	1	15	1e-07	30.2")
+        fp.write("Cluster0	Cluster0	100.00	15	0	0	1	15	1	15	1e-07	30.2")
         fp.close()
-        self.assertEqual(get_unique_lines(), ['Cluster0\t30.2\n'])
+        self.assertEqual(parse_blast_report("true"), ['Cluster0', '30.2'])
         os.chdir("%s" % curr_dir)
         shutil.rmtree(tdir)
-    def test_get_unique_lines_empty_file(self):
+    def test_parse_blast_report_max_values(self):
+        """tests to see if function writes the cluster with the largest blast score"""
+        tdir = tempfile.mkdtemp(prefix="filetest_",)
+        fpath = os.path.join(tdir,"testfile_blast.out")
+        os.chdir("%s" % tdir)
+        fp = open(fpath, "w")
+        fp.write("Cluster0	Cluster0	100.00	15	0	0	1	15	1	15	1e-07	10.5")
+        fp.write("Cluster0	Cluster0	100.00	15	0	0	1	15	1	15	1e-07	30.2")
+        fp.close()
+        self.assertEqual(parse_blast_report("true"), ['Cluster0', '30.2'])
+        os.chdir("%s" % curr_dir)
+        shutil.rmtree(tdir)
+    def test_parse_blast_report_empty_file(self):
         """if file is empty, you can't get an error
         but you can get an empty set"""
         tdir = tempfile.mkdtemp(prefix="filetest_",)
-        fpath = os.path.join(tdir,"testfile.filtered")
+        fpath = os.path.join(tdir,"testfile_blast.out")
         os.chdir("%s" % tdir)
         fp = open(fpath, "w")
         fp.write("")
         fp.close()
-        self.assertEqual(get_unique_lines(), [])
+        self.assertEqual(parse_blast_report("true"), [])
         os.chdir("%s" % curr_dir)
         shutil.rmtree(tdir)
-    def test_get_unique_lines_missing_fields(self):
-        """tests condition where you have a different number
-        of input fields"""
-        tdir = tempfile.mkdtemp(prefix="filetest_",)
-        fpath = os.path.join(tdir,"testfile.filtered")
-        os.chdir("%s" % tdir)
-        fp = open(fpath, "w")
-        fp.write("Cluster0	30.2	15.4\n")
-        fp.write("Cluster0	15.3\n")
-        fp.close()
-        self.assertEqual(get_unique_lines(), ['Cluster0\t30.2\t15.4\n'])
-        os.chdir("%s" % curr_dir)
-        shutil.rmtree(tdir)
-
 
 class Test8(unittest.TestCase):
     def test_divide_values_basic_function(self):
