@@ -31,13 +31,13 @@ import threading
 import types
 from collections import deque,OrderedDict
 import collections
-from multiprocessing import Pool
-
 
 def mp_shell(func, params, numProc):
+	from multiprocessing import Pool
 	p = Pool(numProc)
-	p.map(func, params)
+	out = p.map(func, params)
 	p.terminate()
+	return out
 
 def get_cluster_ids(in_fasta):
     clusters = []
