@@ -257,47 +257,60 @@ def filter_seqs(input_pep):
     outfile.close()
     return outdata
 
-def parse_blast_report(test):
-    """parse out only the name and bit score from the blast report"""
-    curr_dir=os.getcwd()
-    outdata = [ ]
-    for infile in glob.glob(os.path.join(curr_dir, "*_blast.out")):
-        names = get_seq_name(infile)
-        outfile = open("%s.filtered" % names, "w")
-        for line in open(infile, "rU"):
-            try:
-                fields = line.split("\t")
-                print >> outfile, fields[0]+"\t"+fields[11],
-                if "true" in test:
-                    outdata.append(fields[0])
-                    outdata.append(fields[11])
-                else:
-                    pass
-            except:
-                raise TypeError("malformed blast line found")
-        outfile.close()
+
+def _perform_workflow_pbr(data):
+
+    infile = data[0]
+    test = data[1]
+
+    outdata = []
+    order = []
+    names = get_seq_name(infile)
+    outfile = open("%s.filtered.unique" % names, "w")
+    uniques = {}
+
+    for line in open(infile, "rU"):
+        try:
+            fields = line.split("\t")
+            # Keep track of the largest value of fields[0]
+            if fields[0] not in uniques:
+                uniques[fields[0]] = fields[11].strip("\n")
+                order.append(fields[0])
+            else:
+                if float(fields[11]) > float(uniques[fields[0]]):
+                    uniques[fields[0]] = fields[11].strip("\n")
+
+        except IndexError:
+            raise TypeError("Malformed blast line found in %s" % infile)
+
+    for item in order:
+        if "true" in test:
+            outdata.append(item)
+            outdata.append(uniques[item])
+        outfile.write(item + "\t" + uniques[item])
+
+    outfile.close()
     if "true" in test:
         return outdata
-    else:
-        pass
 
-def get_unique_lines():
-    """only return the top hit for each query"""
+    return
+
+def parse_blast_report(test, processors):
+    """parse out only the unqiue names and bit score from the blast report"""
     curr_dir=os.getcwd()
-    for infile in glob.glob(os.path.join(curr_dir, "*.filtered")):
-        names = get_seq_name(infile)
-        outfile = open("%s.filtered.unique" % names, "w")
-        d = {}
-        input = file(infile)
-        outdata = [ ]
-        for line in input:
-            unique = line.split("\t",1)[0]
-            if unique not in d:
-                d[unique] = 1
-                print >> outfile,line,
-                outdata.append(line)
-        outfile.close()
-    return outdata
+    files_and_temp_names = []
+
+    for infile in glob.glob(os.path.join(curr_dir, "*_blast.out")):
+        files_and_temp_names.append([infile, test])
+
+    outdata = mp_shell(_perform_workflow_pbr, files_and_temp_names, processors)
+
+    if "true" in test:
+        # mp_shell will return a list of lists. This will flatten it into a single list
+        return outdata
+
+    return
+
 
 def blast_against_self_blastn(blast_type, genes_pep, genes_nt, output, filter, processors):
     devnull = open('/dev/null', 'w')
