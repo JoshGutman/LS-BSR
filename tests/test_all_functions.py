@@ -149,7 +149,7 @@ class Test5(unittest.TestCase):
         fp = open(fpath, "w")
         fp.write("Cluster0	Cluster0	100.00	15	0	0	1	15	1	15	1e-07	30.2")
         fp.close()
-        self.assertEqual(parse_blast_report("true"), ['Cluster0', '30.2'])
+        self.assertEqual(parse_blast_report("true", 1), ['Cluster0', '30.2'])
         os.chdir("%s" % curr_dir)
         shutil.rmtree(tdir)
     def test_parse_blast_report_missing_fields(self):
@@ -161,7 +161,7 @@ class Test5(unittest.TestCase):
         fp = open(fpath, "w")
         fp.write("Cluster0	Cluster0	100.00	15	0	0	1	15	1	15")
         fp.close()
-        self.assertRaises(TypeError, parse_blast_report, "true")
+        self.assertRaises(TypeError, parse_blast_report, "true", 1)
         os.chdir("%s" % curr_dir)
         shutil.rmtree(ndir)
     def test_parse_blast_report_duplicate_clusters(self):
@@ -173,7 +173,7 @@ class Test5(unittest.TestCase):
         fp.write("Cluster0	Cluster0	100.00	15	0	0	1	15	1	15	1e-07	30.2")
         fp.write("Cluster0	Cluster0	100.00	15	0	0	1	15	1	15	1e-07	30.2")
         fp.close()
-        self.assertEqual(parse_blast_report("true"), ['Cluster0', '30.2'])
+        self.assertEqual(parse_blast_report("true", 1), ['Cluster0', '30.2'])
         os.chdir("%s" % curr_dir)
         shutil.rmtree(tdir)
     def test_parse_blast_report_max_values(self):
@@ -185,7 +185,7 @@ class Test5(unittest.TestCase):
         fp.write("Cluster0	Cluster0	100.00	15	0	0	1	15	1	15	1e-07	10.5")
         fp.write("Cluster0	Cluster0	100.00	15	0	0	1	15	1	15	1e-07	30.2")
         fp.close()
-        self.assertEqual(parse_blast_report("true"), ['Cluster0', '30.2'])
+        self.assertEqual(parse_blast_report("true", 1), ['Cluster0', '30.2'])
         os.chdir("%s" % curr_dir)
         shutil.rmtree(tdir)
     def test_parse_blast_report_empty_file(self):
@@ -197,7 +197,7 @@ class Test5(unittest.TestCase):
         fp = open(fpath, "w")
         fp.write("")
         fp.close()
-        self.assertEqual(parse_blast_report("true"), [])
+        self.assertEqual(parse_blast_report("true", 1), [])
         os.chdir("%s" % curr_dir)
         shutil.rmtree(tdir)
 
