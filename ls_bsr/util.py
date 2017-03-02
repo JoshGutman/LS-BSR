@@ -271,7 +271,7 @@ def _perform_workflow_pbr(data):
 
     for line in open(infile, "rU"):
         try:
-            fields = line.split("\t")
+            fields = line.split()
             # Keep track of the largest value of fields[0]
             if fields[0] not in uniques:
                 uniques[fields[0]] = fields[11].strip("\n")
