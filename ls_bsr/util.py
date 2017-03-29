@@ -287,7 +287,7 @@ def _perform_workflow_pbr(data):
         if "true" in test:
             outdata.append(item)
             outdata.append(uniques[item])
-        outfile.write(item + "\t" + uniques[item])
+        outfile.write(item + "\t" + uniques[item] + "\n")
 
     outfile.close()
     if "true" in test:
@@ -306,7 +306,6 @@ def parse_blast_report(test, processors):
     outdata = mp_shell(_perform_workflow_pbr, files_and_temp_names, processors)
 
     if "true" in test:
-        # mp_shell will return a list of lists. This will flatten it into a single list
         return outdata
 
     return
