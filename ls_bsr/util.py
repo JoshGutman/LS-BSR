@@ -1088,17 +1088,16 @@ def blat_against_each_genome(dir_path,database,processors):
     
     mp_shell(_perform_workflow_blat_genome, files_and_temp_names, processors)
 
+	
 def make_table_dev(infile, test, clusters):
     """make the BSR matrix table"""
     values = [ ]
     names = [ ]
     outdata = [ ]
-    name=[ ]
-    out=get_seq_name(infile)
-    name.append(out)
+    name = get_seq_name(infile)
     reduced=[ ]
     """remove the junk at the end of the file"""
-    for x in name:reduced.append(x.replace('.fasta.new_blast.out.filtered.filtered.unique',''))
+    reduced.append(name.replace('.fasta.new_blast.out.filtered.filtered.unique',''))
     names.append(reduced)
     my_dict={}
     my_file=open(infile, "rU")
@@ -1112,19 +1111,18 @@ def make_table_dev(infile, test, clusters):
     my_file.close()
     """add in values, including any potentially missing ones"""
     for x in clusters:
-        if x not in my_dict.keys():my_dict.update({x:0})
+        if x not in my_dict:
+            my_dict.update({x:0})
     for x in reduced:
         values.append(x)
     """sort keys to get the same order between samples"""
     od = collections.OrderedDict(sorted(my_dict.items()))
-    values_2 = od.values()
-    values_3 = values+values_2
+    values += od.values()
     if "T" in test:
-        myout=[x for i, x in enumerate(outdata) if x not in outdata[i+1:]]
         return sorted(outdata)
-    else:
-        pass
-    return names, values_3
+
+    return names, values
+
 
 def create_bsr_matrix_dev(master_list):
     new_matrix = open("bsr_matrix", "w")
@@ -1134,22 +1132,39 @@ def create_bsr_matrix_dev(master_list):
         print >> new_matrix, "\t".join(y)
     new_matrix.close()
 
+
+def _perform_workflow_nl(data):
+    tn, f = data[0]
+    clusters = data[1]
+    names = data[2]
+    table_list = data[3]
+    debug = data[4]
+
+    name,values=make_table_dev(f, "F", clusters)
+    names.append(name)
+    table_list.append(values)
+    if debug == "T":
+        logging.logPrint("sample %s processed" % f)
+
 def new_loop(to_iterate, processors, clusters, debug):
-    names = []
-    table_list = []
-    def _perform_workflow(data):
-        tn, f = data
-        name,values=make_table_dev(f, "F", clusters)
-        names.append(name)
-        table_list.append(values)
-        if debug == "T":
-            logging.logPrint("sample %s processed" % f)
-        else:
-            pass
-    set(p_func.pmap(_perform_workflow,
-                    to_iterate,
-                    num_workers=processors))
+    from multiprocessing import Manager
+
+    manager = Manager()
+
+    names = manager.list()
+    table_list = manager.list()
+
+    files_and_temp_names_nl = []
+    for file in to_iterate:
+        files_and_temp_names_nl.append([file, clusters, names, table_list, debug])
+
+    mp_shell(_perform_workflow_nl, files_and_temp_names_nl, processors)
+
+    names = list(names)
+    table_list = list(table_list)
+
     return names,table_list
+
 
 def run_vsearch(id, processors):
     devnull = open("/dev/null", "w")
