@@ -340,8 +340,9 @@ def main(directory,id,filter,processors,genes,cluster_method,blast,length,
     parse_blast_report_dev("false",4)
     curr_dir=os.getcwd()
     table_files = glob.glob(os.path.join(curr_dir, "*.filtered.unique"))
-    files_and_temp_names = [(str(idx), os.path.join(curr_dir, f))
-                            for idx, f in enumerate(table_files)]
+    #files_and_temp_names = [(str(idx), os.path.join(curr_dir, f))
+    #                        for idx, f in enumerate(table_files)]
+    files_and_temp_names = [os.path.join(curr_dir, f) for f in table_files]
     names=[]
     table_list = []
     nr_sorted=sorted(clusters)
