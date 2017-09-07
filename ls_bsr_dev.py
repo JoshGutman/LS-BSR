@@ -85,7 +85,7 @@ def test_fplog(option, opt_str, value, parser):
         print("select from T or F for f_plog setting")
         sys.exit()
 
-def main(directory,id,filter,processors,genes,cluster_method,blast,length,
+def main(main_dir, directory,id,filter,processors,genes,cluster_method,blast,length,
          max_plog,min_hlog,f_plog,keep,filter_peps,filter_scaffolds,prefix,min_pep_length,debug):
     start_dir = os.getcwd()
     ap=os.path.abspath("%s" % start_dir)
@@ -340,8 +340,6 @@ def main(directory,id,filter,processors,genes,cluster_method,blast,length,
     parse_blast_report_dev("false",4)
     curr_dir=os.getcwd()
     table_files = glob.glob(os.path.join(curr_dir, "*.filtered.unique"))
-    #files_and_temp_names = [(str(idx), os.path.join(curr_dir, f))
-    #                        for idx, f in enumerate(table_files)]
     files_and_temp_names = [os.path.join(curr_dir, f) for f in table_files]
     names=[]
     table_list = []
@@ -352,14 +350,17 @@ def main(directory,id,filter,processors,genes,cluster_method,blast,length,
         centroid_list.append(x)
     table_list.append(centroid_list)
     logging.logPrint("starting matrix building")
-    '''
-    new_names,new_table = new_loop_dev(files_and_temp_names, processors, clusters, debug)
-    '''
-    
-    
     arg1 = ", ".join(files_and_temp_names)
     arg2 = ", ".join(clusters)
-    new_loop_return = subprocess.check_output(["./new_loop", arg1, arg2]).split("\n")
+    f = open("arg1.txt", "w")
+    f.write(arg1)
+    f.close()
+    f = open("arg2.txt", "w")
+    f.write(arg2)
+    f.close()
+    new_loop_return = subprocess.check_output([os.path.join(main_dir, "new_loop"), "arg1.txt", "arg2.txt"], shell=False).split("\n")
+    os.remove("arg1.txt")
+    os.remove("arg2.txt")
     new_names = new_loop_return[0].replace("[", "").replace("]", "").split(" ")
     new_table = new_loop_return[1].split("] [")
     for i in range(len(new_table)):
@@ -370,8 +371,6 @@ def main(directory,id,filter,processors,genes,cluster_method,blast,length,
         open("ref.list", "a").write("%s\n" % x)
     names_out = open("names.txt", "w")
     for x in new_names: names_out.write(x+"\n")
-    
-    
     names_out.close()
     create_bsr_matrix_dev(new_table_list)
     divide_values("bsr_matrix", ref_scores)
@@ -440,6 +439,8 @@ def main(directory,id,filter,processors,genes,cluster_method,blast,length,
     os.chdir("%s" % ap)
 
 if __name__ == "__main__":
+    main_path = os.path.abspath(sys.argv[0])
+    main_dir = os.path.split(main_path)[0]
     usage="usage: %prog [options]"
     parser = optparse.OptionParser(usage=usage)
     parser.add_option("-d", "--directory", dest="directory",
@@ -502,6 +503,6 @@ if __name__ == "__main__":
             parser.print_help()
             exit(-1)
 
-    main(options.directory,options.id,options.filter,options.processors,options.genes,options.cluster_method,options.blast,
+    main(main_dir, options.directory,options.id,options.filter,options.processors,options.genes,options.cluster_method,options.blast,
          options.length,options.max_plog,options.min_hlog,options.f_plog,options.keep,options.filter_peps,
          options.filter_scaffolds,options.prefix,options.min_pep_length,options.debug)
