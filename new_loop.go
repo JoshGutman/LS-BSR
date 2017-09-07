@@ -7,12 +7,9 @@ import (
         "strings"
         "sort"
         "path"
+	"io/ioutil"
 )
 
-
-//TODO https://github.com/JoshGutman/LS-BSR/blob/master/ls_bsr.py
-// Lines 354 and 355 will have to be changed to accomodate for the fact that
-// this program returns just the basename instead of [[basename]]
 
 func make_table_dev(infile string, clusters []string) (string, []string) {
 
@@ -36,6 +33,10 @@ func make_table_dev(infile string, clusters []string) (string, []string) {
   // TODO add try/except block to make sure fields is at least len = 2
   for scanner.Scan() {
     fields := strings.Split(scanner.Text(), "\t")
+    if len(fields) < 2 {
+       fmt.Println("Abnormal number of fields")
+       os.Exit(1)
+    }
     dict[fields[0]] = fields[1]
     keys = append(keys, fields[0])
   }
@@ -101,26 +102,13 @@ func new_loop(to_iterate, clusters []string) ([]string, [][]string) {
 
 
 func main() {
-  /*
-  var files [4]string
-  files[0] = "test1_blast.out.filtered.unique"
-  files[1] = "test2_blast.out.filtered.unique"
-  files[2] = "test3_blast.out.filtered.unique"
-  files[3] = "test4_blast.out.filtered.unique"
-
-  var clusters [4]string
-  clusters[0] = "Cluster0"
-  clusters[1] = "Cluster1"
-  clusters[2] = "Cluster2"
-  clusters[3] = "Cluster3"
-
-  a, b := new_loop(files[:], clusters[:])
-  fmt.Println(a, b)
-  */
-
   args := os.Args
-  to_iterate := strings.Split(args[1], ", ")
-  clusters := strings.Split(args[2], ", ")
+  
+  arg1, _ := ioutil.ReadFile(args[1])
+  arg2, _ := ioutil.ReadFile(args[2])
+
+  to_iterate := strings.Split(string(arg1), ", ")
+  clusters := strings.Split(string(arg2), ", ")
   out1, out2 := new_loop(to_iterate, clusters)
   fmt.Println(out1)
   fmt.Println(out2)
